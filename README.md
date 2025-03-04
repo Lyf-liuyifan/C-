@@ -207,3 +207,26 @@ int main() {
 
 #### 2.1.3在出现异常的情况下等待
 
+​	在std::thread对象销毁前，我们需要确保调用join()和detach()。假如线程启动之后，有异常抛出，如果这时候还没有调用join(),则该join()会被忽略。
+
+​	防止程序因线程抛出异常而终止，我们需要处理这种情况。一般来说我们调用join()是为了对付没有异常的情况，而对于有异常抛出的线程我们仍要调用join()来防止生存期的问题发生，如下面代码:
+
+```c++
+//伪代码 pseudocode
+struct func;
+void f(){
+    int some_local_state = 0;
+    func my_func(some_local_state);
+    std::thread t(my_func);
+    try{//假如发生异常抛出，先找到catch
+        do_something_in_current_thread();
+    }
+    catch(...){//发生异常抛出先调用join()再抛出异常
+        t.join();
+        throw;
+    }
+    t.join();
+}
+```
+
+这份代码主要就是为了保证局部变量不在被销毁后被线程使用，
